@@ -21,47 +21,57 @@ const render = Render.create({
   }
 });
 
+render.context.fillStyle = "blue";
+render.context.font = "50px sans-serif";
+
 // Planos para colisión
-const primerPlano = 0x0001,
-  segundoPlano = 0x0002;
+// const primerPlano = 0x0001,
+//   segundoPlano = 0x0002;
 
-let ang_s1 = 0;
-
-var ship_v = Vertices.fromPath(
-  "0 90 60 90 60 0 90 0 90 90 185 65 125 160 0 160"
-);
-// var ship = Bodies.fromVertices(100, 0, ship_v, { render: {sprite: {texture: './Imgs/barco_der.png'}, }}, true)
-var ship = Bodies.fromVertices(100, 0, ship_v, true);
-
-var ship2 = Bodies.rectangle(100, 0, 187, 90, {
+var ship1 = Bodies.rectangle(100, 300, 180, 90, {
+  chamfer: { radius: 20 },
   render: {
     sprite: { texture: "./Imgs/barco_der.png", xOffset: 0, yOffset: 0.2 }
   }
 });
+// var ship1 = Bodies.rectangle(100, 300, 180, 90, { chamfer: { radius: 30 } });
 
-const boxA = Bodies.rectangle(400, 200, 80, 80, {
+var ship2 = Bodies.rectangle(400, 300, 180, 90, {
+  chamfer: { radius: 30 },
   render: {
-    strokeStyle: "#ffffff",
-    sprite: { texture: "./Imgs/barco.png", xOffset: 0, yOffset: 0 }
+    sprite: { texture: "./Imgs/barco.png", xOffset: 0, yOffset: 0.2 }
   }
 });
-const boxB = Bodies.rectangle(450, 50, 80, 80, { restitution: 0.95 });
 
-// const bullet = Bodies.circle(300,300,5,{velocity: {x: 100, y: 0.1}});
-const bullet = Bodies.circle(300, 300, 5);
+// const boxB = Bodies.rectangle(450, 50, 80, 80, { restitution: 0.95 });
+
+// Objetivo actual de altura del lado izquierdo, varía entre 400 y 600:
+let altura_izda = 500;
+let bajando_izda = true;
+let altura_centro_izda = 500;
+let bajando_centro_izda = true;
+let altura_centro_der = 500;
+let bajando_centro_der = true;
+let altura_der = 500;
+let bajando_der = true;
+
+let shoot_allowed_s1 = true;
+let shoot_allowed_s2 = true;
+let s1_bullet_id = 0;
+let s2_bullet_id = 0;
 
 // Soft Body
 var particleOptions = {
-  friction: 0.1,
-  frictionStatic: 0.1,
-  frictionAir: 0.4,
-  render: { visible: true }
+  friction: 0.05,
+  frictionStatic: 0.05,
+  frictionAir: 0.8,
+  render: { visible: false }
 };
-var constraintOptions = { stiffness: 0.4 };
+var constraintOptions = { stiffness: 0.5, render: {visible: false, anchors: false, lineWidth: 2} };
 const base = Composites.softBody(
   0,
   400,
-  30,
+  32,
   1,
   0,
   0,
@@ -70,15 +80,35 @@ const base = Composites.softBody(
   particleOptions,
   constraintOptions
 );
+
+// De 33 elementos, hay contraints en el 1, 8, 17, 33
+let pto_izda = { x: 0, y: 500 };
 var base_constraint_izda = Constraint.create({
-  pointA: { x: 0, y: 500 },
+  pointA: pto_izda,
   bodyB: base.bodies[0],
   pointB: { x: 0, y: 0 },
   length: 0
 });
 
+let pto_centro_izda = { x: 400, y: 500 };
+var base_constraint_centro_izda = Constraint.create({
+  pointA: pto_centro_izda,
+  bodyB: base.bodies[11],
+  pointB: { x: 0, y: 0 },
+  length: 0
+});
+
+let pto_centro_der = { x: 800, y: 500 };
+var base_constraint_centro_der = Constraint.create({
+  pointA: pto_centro_der,
+  bodyB: base.bodies[21],
+  pointB: { x: 0, y: 0 },
+  length: 0
+});
+
+let pto_der = { x: 1200, y: 500 };
 var base_constraint_der = Constraint.create({
-  pointA: { x: 1200, y: 500 },
+  pointA: pto_der,
   bodyB: base.bodies[base.bodies.length - 1],
   pointB: { x: 0, y: 0 },
   length: 0
@@ -92,21 +122,24 @@ var pared_der = Bodies.rectangle(1200, 300, 10, 600, {
   isStatic: true,
   render: { visible: false }
 });
-var ground = Bodies.rectangle(0, 400, 1200, 10, {
+var ground = Bodies.rectangle(600, 650, 1200, 10, {
   isStatic: true,
   render: { visible: true }
 });
+
+// Suspende la gravedad temporalmente
+//engine.world.gravity = {x: 0, y: 0};
+
 World.add(engine.world, [
   base,
   base_constraint_izda,
+  base_constraint_centro_izda,
+  base_constraint_centro_der,
   base_constraint_der,
-  ship,
-  boxA,
-  boxB,
+  ship1,
+  ship2,
   pared_izda,
   pared_der,
-  ship2,
-  ship,
   ground
 ]);
 
@@ -116,32 +149,117 @@ Engine.run(engine);
 
 Render.run(render);
 
+function shoot(isS1) {
+  if (isS1) {
+    // Obtiene el angulo en radianes
+    let ang_s1 = ship1.angle;
+    //let factorX = (90 - (ang_s1)) / 90;
+    // Buscamos 65
+    //let offsetX = 76.322 * Math.cos(ang_s1 - 0.38);
+    let offsetX = 85 * Math.cos(ang_s1 - 0.38);
+    console.log("factorX:", offsetX, " ang_s1:", ang_s1);
+    let offsetY = 85 * Math.sin(ang_s1 - 0.38);
+    // Baucamos 40
+    //console.log(factorY);
+    // Convierte a grados
+    //ang_s1 = (ang_s1 * 180) / 3.1416;
+    let bullet = Bodies.circle(
+      ship1.position.x + offsetX,
+      ship1.position.y + offsetY,
+      7,
+      {
+        force: {
+          x: 0.01 * Math.cos(ang_s1 - 0.45),
+          y: 0.01 * Math.sin(ang_s1 - 0.45)
+        }
+      }
+    );
+    s1_bullet_id = bullet.id;
+    World.add(engine.world, [bullet]);
+  } else {
+    // Ship1
+    // Obtiene el angulo en radianes
+    let ang_s2 = ship2.angle;
+    //let factorX = (90 - (ang_s1)) / 90;
+    // Buscamos 65
+    let factorX = -85 * Math.cos(ang_s2 - 0.38);
+    // console.log("factorX:", factorX, " ang_s1:", ang_s2);
+    // Pi - 0.38 = 2.76
+    let factorY = 85 * Math.sin(ang_s2 - 2.76);
+    // Baucamos 40
+    console.log(factorY);
+    // Convierte a grados
+    //ang_s1 = (ang_s1 * 180) / 3.1416;
+    let bullet = Bodies.circle(
+      ship2.position.x + factorX,
+      ship2.position.y + factorY,
+      7,
+      {
+        force: {
+          x: -0.01 * Math.cos(ang_s2 - 0.45),
+          // Pi - 0.45 = 2.69
+          y: 0.01 * Math.sin(ang_s2 - 2.69)
+        }
+      }
+    );
+    World.add(engine.world, [bullet]);
+    s2_bullet_id = bullet.id;
+    console.log("ang_s2", ang_s2, "y", Math.sin(ang_s2 - 2.69));
+  }
+}
+
+function impact(bulletS1) {
+  if (bulletS1) {
+    World.remove(
+      engine.world,
+      [engine.world.bodies.filter(item => item.id === s1_bullet_id)][0]
+    );
+    console.log("Bala1");
+  } else {
+    console.log("Bala2");
+    World.remove(
+      engine.world,
+      [engine.world.bodies.filter(item => item.id === s2_bullet_id)][0]
+    );
+  }
+}
+
 window.addEventListener("keydown", event => {
+  if (event.code == "KeyA") {
+    // Aplica una fuerza a Ship1
+    let ang_s1 = ship1.angle;
+    // ship1.force = { x: -0.1 * Math.cos(ang_s1), y: - 0.1 * Math.sin(ang_s1) };
+    ship1.force = { x: -0.1 * Math.cos(ang_s1), y: 0 };
+  }
+  if (event.code == "KeyD") {
+    // Aplica una fuerza a Ship1
+    let ang_s1 = ship1.angle;
+    ship1.force = { x: 0.1 * Math.cos(ang_s1), y: 0 };
+  }
   if (event.key === "ArrowRight") {
-    // Aplica una fuerza a boxB
-    boxB.force = { x: 0.1, y: 0 };
+    // Aplica una fuerza a Ship2
+    let ang_s2 = ship2.angle;
+    ship2.force = { x: 0.1 * Math.cos(ang_s2), y: 0 };
   }
   if (event.key === "ArrowLeft") {
-    // Aplica una fuerza a boxB
-    boxB.force = { x: -0.1, y: 0 };
+    // Aplica una fuerza a Ship2
+    let ang_s2 = ship2.angle;
+    ship2.force = { x: -0.1 * Math.cos(ang_s2), y: 0 };
   }
+
   if (event.code == "KeyH") {
-    boxA.render = { visible: false };
+    //boxA.render = { visible: false };
   }
   if (event.code == "KeyS") {
-    // boxA.render = {visible: true};
-    World.add(engine.world, [
-      Bodies.circle(ship.position.x + 95, ship.position.y - 30, 7, {
-        force: {
-          x: (0.01 * (90 - (ang_s1 - 40))) / 90,
-          y: 0.01 * ((ang_s1 - 40) / 90)
-        }
-      })
-    ]);
-    //bullet.position = {x: 100, y: 100};
+    if (shoot_allowed_s1) {
+      shoot_allowed_s1 = false;
+      shoot(true);
+      setTimeout(() => {
+        shoot_allowed_s1 = true;
+      }, 3000);
+    }
   }
   if (event.code == "KeyR") {
-    World.remove(engine.world, [boxA]);
   }
   if (event.code == "KeyC") {
     ship.collisionFilter = { category: segundoPlano };
@@ -153,10 +271,13 @@ window.addEventListener("keydown", event => {
     });
   }
   if (event.key === "ArrowDown") {
-    base_constraint_der.pointA = {
-      x: base_constraint_der.pointA.x,
-      y: base_constraint_der.pointA.y - 10
-    };
+    if (shoot_allowed_s2) {
+      shoot_allowed_s2 = false;
+      shoot(false);
+      setTimeout(() => {
+        shoot_allowed_s2 = true;
+      }, 3000);
+    }
   }
 });
 
@@ -172,7 +293,10 @@ Events.on(engine, "collisionStart", function(event) {
 
     // console.log("Id_A:", pair.bodyA.id);
     // console.log("Id_B:", pair.bodyB.id);
-
+    if (pair.bodyA.id === s1_bullet_id || pair.bodyB.id === s1_bullet_id)
+      impact(true);
+    if (pair.bodyA.id === s2_bullet_id || pair.bodyB.id === s2_bullet_id)
+      impact(false);
     //alert("Colision")
   }
 });
@@ -181,16 +305,135 @@ Events.on(engine, "collisionStart", function(event) {
 Events.on(engine, "beforeUpdate", function(event) {
   var engine = event.source;
 
-  if (event.timestamp % 90 < 10) {
-    //ship.angle = 0;
-    ang_s1 = (ship.angle * 180) / 3.1416;
-    //console.log("Angulo: ", ang_s1);
-    // if (ang > 20) ship.angle = (20 * 3.1416 / 180);
+  if (event.timestamp % 90 < 40) {
+    // Mueve las constraints cada cierto tiempo para simular olas:
+    let y_act_izda = base_constraint_izda.pointA.y;
+    if (bajando_izda) {
+      y_act_izda = base_constraint_izda.pointA.y + 2;
+      pto_izda = {
+        x: base_constraint_izda.pointA.x,
+        y: y_act_izda
+      };
+      base_constraint_izda.pointA = pto_izda;
+      if (y_act_izda >= altura_izda) {
+        altura_izda = 400 + Math.random() * 200;
+        bajando_izda = false;
+      }
+    } else {
+      y_act_izda = base_constraint_izda.pointA.y - 2;
+      pto_izda = {
+        x: base_constraint_izda.pointA.x,
+        y: y_act_izda
+      };
+      base_constraint_izda.pointA = pto_izda;
+      if (y_act_izda <= altura_izda) {
+        altura_izda = 400 + Math.random() * 200;
+        bajando_izda = true;
+      }
+    }
+
+    let y_act_centro_izda = base_constraint_centro_izda.pointA.y;
+    if (bajando_centro_izda) {
+      y_act_centro_izda = base_constraint_centro_izda.pointA.y + 2;
+      pto_centro_izda = {
+        x: base_constraint_centro_izda.pointA.x,
+        y: y_act_centro_izda
+      };
+      base_constraint_centro_izda.pointA = pto_centro_izda;
+      if (y_act_centro_izda >= altura_centro_izda) {
+        altura_centro_izda = 400 + Math.random() * 200;
+        bajando_centro_izda = false;
+      }
+    } else {
+      y_act_centro_izda = base_constraint_centro_izda.pointA.y - 2;
+      pto_centro_izda = {
+        x: base_constraint_centro_izda.pointA.x,
+        y: y_act_centro_izda
+      };
+      base_constraint_centro_izda.pointA = pto_centro_izda;
+      if (y_act_centro_izda <= altura_centro_izda) {
+        altura_centro_izda = 400 + Math.random() * 200;
+        bajando_centro_izda = true;
+      }
+    }
+
+    let y_act_centro_der = base_constraint_centro_der.pointA.y;
+    if (bajando_centro_der) {
+      y_act_centro_der = base_constraint_centro_der.pointA.y + 2;
+      pto_centro_der = {
+        x: base_constraint_centro_der.pointA.x,
+        y: y_act_centro_der
+      };
+      base_constraint_centro_der.pointA = pto_centro_der;
+      if (y_act_centro_der >= altura_centro_izda) {
+        altura_centro_der = 400 + Math.random() * 200;
+        bajando_centro_der = false;
+      }
+    } else {
+      y_act_centro_der = base_constraint_centro_der.pointA.y - 2;
+      pto_centro_der = {
+        x: base_constraint_centro_der.pointA.x,
+        y: y_act_centro_der
+      };
+      base_constraint_centro_der.pointA = pto_centro_der;
+      if (y_act_centro_der <= altura_centro_der) {
+        altura_centro_der = 400 + Math.random() * 200;
+        bajando_centro_der = true;
+      }
+    }
+
+    let y_act_der = base_constraint_der.pointA.y;
+    if (bajando_der) {
+      y_act_der = base_constraint_der.pointA.y + 2;
+      pto_der = {
+        x: base_constraint_der.pointA.x,
+        y: y_act_der
+      };
+      base_constraint_der.pointA = pto_der;
+      if (y_act_der >= altura_izda) {
+        altura_der = 400 + Math.random() * 200;
+        bajando_der = false;
+      }
+    } else {
+      y_act_der = base_constraint_der.pointA.y - 2;
+      pto_der = {
+        x: base_constraint_der.pointA.x,
+        y: y_act_der
+      };
+      base_constraint_der.pointA = pto_der;
+      if (y_act_der <= altura_der) {
+        altura_der = 400 + Math.random() * 200;
+        bajando_der = true;
+      }
+    }
   }
 
   // apply random forces every 5 secs
   // if (event.timestamp % 5000 < 50)
   // shakeScene(engine);
+});
+
+Events.on(render, "afterRender", function(event) {
+  let context = render.context;
+  context.fillStyle = "red";
+  context.fillText("Algo", 100, 100);
+//   for (let i = 0; i < base.bodies.length; i = i + 4) {
+//     context.beginPath();
+//     context.moveTo(base.bodies[i].position.x, base.bodies[i].position.y);
+//     let p1_x_1 = base.bodies[i].position.x;
+//     j = i + 4;
+//     let p1_x_2 = base.bodies[j].position.x;
+//     let p1_x = p1_x_1 + (p1_x_2 - p1_x_1) / 2;
+//     context.bezierCurveTo(
+//       p1_x,
+//       base.bodies[i].y,
+//       p1_x,
+//       base.bodies[i+4].position.y,
+//       base.bodies[i+4].position.x,
+//       base.bodies[i+4].position.y
+//     );
+//     context.stroke();
+//   }
 });
 
 var particleOptions = {
