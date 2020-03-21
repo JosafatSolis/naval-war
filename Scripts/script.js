@@ -10,19 +10,19 @@ const Engine = Matter.Engine,
 const engine = Engine.create();
 
 const render = Render.create({
-  element: document.body,
+  element: document.getElementById("main"),
   engine: engine,
   options: {
     width: 1200,
     height: 600,
-    background: "./Imgs/fondo.jpg",
+    background: "./Imgs/fondo_3_copy.jpg",
     showAngleIndicator: false,
     wireframes: false
   }
 });
 
 render.context.fillStyle = "blue";
-render.context.font = "50px sans-serif";
+render.context.font = "48px sans-serif";
 
 // Planos para colisión
 // const primerPlano = 0x0001,
@@ -30,14 +30,16 @@ render.context.font = "50px sans-serif";
 
 var ship1 = Bodies.rectangle(100, 300, 180, 90, {
   chamfer: { radius: 20 },
+  frictionAir: 0.08,
   render: {
     sprite: { texture: "./Imgs/barco_der.png", xOffset: 0, yOffset: 0.2 }
   }
 });
 // var ship1 = Bodies.rectangle(100, 300, 180, 90, { chamfer: { radius: 30 } });
 
-var ship2 = Bodies.rectangle(400, 300, 180, 90, {
+var ship2 = Bodies.rectangle(1100, 300, 180, 90, {
   chamfer: { radius: 30 },
+  frictionAir: 0.08,
   render: {
     sprite: { texture: "./Imgs/barco.png", xOffset: 0, yOffset: 0.2 }
   }
@@ -60,6 +62,20 @@ let shoot_allowed_s2 = true;
 let s1_bullet_id = 0;
 let s2_bullet_id = 0;
 
+let s1_life = 10;
+let s2_life = 10;
+
+let flgGameOver = false;
+let winnerMsg;
+
+const _audio = new Audio();
+_audio.src = "../Media/NavalWar.mp3";
+_audio.loop = true;
+
+const _audioGameOver = new Audio();
+_audioGameOver.src = "../Media/GameOver.mp3";
+_audioGameOver.loop = false;
+
 // Soft Body
 var particleOptions = {
   friction: 0.05,
@@ -67,7 +83,10 @@ var particleOptions = {
   frictionAir: 0.8,
   render: { visible: false }
 };
-var constraintOptions = { stiffness: 0.5, render: {visible: false, anchors: false, lineWidth: 2} };
+var constraintOptions = {
+  stiffness: 0.5,
+  render: { visible: false, anchors: false, lineWidth: 2 }
+};
 const base = Composites.softBody(
   0,
   400,
@@ -168,6 +187,7 @@ function shoot(isS1) {
       ship1.position.y + offsetY,
       7,
       {
+        render: { fillStyle: "#eb9b34" },
         force: {
           x: 0.01 * Math.cos(ang_s1 - 0.45),
           y: 0.01 * Math.sin(ang_s1 - 0.45)
@@ -195,6 +215,7 @@ function shoot(isS1) {
       ship2.position.y + factorY,
       7,
       {
+        render: { fillStyle: "#f5b942" },
         force: {
           x: -0.01 * Math.cos(ang_s2 - 0.45),
           // Pi - 0.45 = 2.69
@@ -208,20 +229,50 @@ function shoot(isS1) {
   }
 }
 
-function impact(bulletS1) {
+function startGame() {
+  _audio.play();
+}
+
+function restartGame() {
+  s1_life = 10;
+  s2_life = 10;
+  winnerMsg = undefined;
+  _audio.currentTime = 0;
+  flgGameOver = false;
+  _audio.play();
+}
+
+start = document.getElementById("start");
+start.onclick = startGame;
+
+restart = document.getElementById("restart");
+restart.onclick = restartGame;
+
+function checkForLoose() {
+  if (s1_life <= 0) winnerMsg = "Player 2 Win!!";
+  if (s2_life <= 0) winnerMsg = "Player 1 Win!!";
+  if (winnerMsg != undefined) {
+    flgGameOver = true;
+    _audioGameOver.play();
+  }
+}
+
+function impact(bulletS1, onShip1, onShip2) {
   if (bulletS1) {
     World.remove(
       engine.world,
       [engine.world.bodies.filter(item => item.id === s1_bullet_id)][0]
     );
-    console.log("Bala1");
   } else {
-    console.log("Bala2");
     World.remove(
       engine.world,
       [engine.world.bodies.filter(item => item.id === s2_bullet_id)][0]
     );
   }
+  // Bala disparada por S1 e impacto en S2
+  if (bulletS1 && onShip2) s2_life--;
+  if (!bulletS1 && onShip1) s1_life--;
+  checkForLoose();
 }
 
 window.addEventListener("keydown", event => {
@@ -288,16 +339,14 @@ Events.on(engine, "collisionStart", function(event) {
   // change object colours to show those starting a collision
   for (var i = 0; i < pairs.length; i++) {
     var pair = pairs[i];
-    // pair.bodyA.render.fillStyle = '#333';
-    // pair.bodyB.render.fillStyle = '#333';
-
     // console.log("Id_A:", pair.bodyA.id);
     // console.log("Id_B:", pair.bodyB.id);
+    let onShip1 = pair.bodyA.id === ship1.id || pair.bodyB.id === ship1.id;
+    let onShip2 = pair.bodyA.id === ship2.id || pair.bodyB.id === ship2.id;
     if (pair.bodyA.id === s1_bullet_id || pair.bodyB.id === s1_bullet_id)
-      impact(true);
+      impact(true, onShip1, onShip2);
     if (pair.bodyA.id === s2_bullet_id || pair.bodyB.id === s2_bullet_id)
-      impact(false);
-    //alert("Colision")
+      impact(false, onShip1, onShip2);
   }
 });
 
@@ -416,24 +465,37 @@ Events.on(engine, "beforeUpdate", function(event) {
 Events.on(render, "afterRender", function(event) {
   let context = render.context;
   context.fillStyle = "red";
-  context.fillText("Algo", 100, 100);
-//   for (let i = 0; i < base.bodies.length; i = i + 4) {
-//     context.beginPath();
-//     context.moveTo(base.bodies[i].position.x, base.bodies[i].position.y);
-//     let p1_x_1 = base.bodies[i].position.x;
-//     j = i + 4;
-//     let p1_x_2 = base.bodies[j].position.x;
-//     let p1_x = p1_x_1 + (p1_x_2 - p1_x_1) / 2;
-//     context.bezierCurveTo(
-//       p1_x,
-//       base.bodies[i].y,
-//       p1_x,
-//       base.bodies[i+4].position.y,
-//       base.bodies[i+4].position.x,
-//       base.bodies[i+4].position.y
-//     );
-//     context.stroke();
-//   }
+  context.fillText(`P1: ${s1_life}   vs   P2: ${s2_life}`, 780, 60);
+  //   for (let i = 0; i < base.bodies.length; i = i + 4) {
+  //     context.beginPath();
+  //     context.moveTo(base.bodies[i].position.x, base.bodies[i].position.y);
+  //     let p1_x_1 = base.bodies[i].position.x;
+  //     j = i + 4;
+  //     let p1_x_2 = base.bodies[j].position.x;
+  //     let p1_x = p1_x_1 + (p1_x_2 - p1_x_1) / 2;
+  //     context.bezierCurveTo(
+  //       p1_x,
+  //       base.bodies[i].y,
+  //       p1_x,
+  //       base.bodies[i+4].position.y,
+  //       base.bodies[i+4].position.x,
+  //       base.bodies[i+4].position.y
+  //     );
+  //     context.stroke();
+  //   }
+
+  if (flgGameOver) {
+    // Dibuja el GameOver
+    context.fillStyle = "black";
+    context.fillRect(0, 0, 1200, 600);
+    context.fillStyle = "red";
+    context.font = "80px sans-serif";
+    context.fillText("Game Over!", 350, 250);
+    context.fillStyle = "white";
+    context.font = "50px sans-serif";
+    context.fillText(winnerMsg, 400, 380);
+    _audio.pause();
+  }
 });
 
 var particleOptions = {

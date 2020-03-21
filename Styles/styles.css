@@ -1,0 +1,35 @@
+#main {
+  display: flex;
+  justify-content: center;
+}
+
+.css-button {
+  display: inline-block;
+  cursor: pointer;
+  color: #ffffff;
+  font-family: Arial;
+  font-size: 16px;
+  border-radius: 5px;
+  border: solid 1px #fc9f41;
+  background: linear-gradient(180deg, #ffc477 5%, #fb9e25 100%);
+  text-shadow: 1px 1px 0px #cc9f52;
+  box-shadow: inset 1px 1px 0px 0px #fce2c1;
+}
+.css-button:hover {
+  background: linear-gradient(180deg, #fb9e25 5%, #ffc477 100%);
+}
+.css-button:active {
+  position: relative;
+  top: 1px;
+}
+.css-button-text {
+  padding: 7px 18px;
+  float: left;
+}
+.css-button-icon {
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: rgba(0, 0, 0, 0.14) -1px 0px 0px inset;
+  border-radius: 5px 0 0 5px;
+  padding: 7px 10px;
+  float: left;
+}
