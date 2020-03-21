@@ -8,24 +8,44 @@
   </head>
   <body style="background: url(Imgs/fondo_6.jpg);">
     <br />
-    <br />
-    <a id="start" class="css-button">
-        <i class="fa fa-gear" aria-hidden="true"></i
-      ></span>
-      <span class="css-button-text">Iniciar</span>
-    </a>
-    <br />
+    <div id="instructions">
+        <h1 class="text_instructions">Instructions</h3>
+        <h2 class="text_instructions">Welcome to Pirates War!!</h2>
+        <p class="text_instructions p_text">
+            Defeat your opponent by shotting him <br>
+            and reducing his life to 0, <br>
+            before he reduces yours!</p>
+            <p class="text_instructions p_text">Use these keys to play:</p>
+            <p class="text_instructions p_text">Player 1</p>
+            <ul class="text_instructions">
+                <li>a = left  /  d = right</li>
+                <li>s = shoot</li>
+            </ul>
+            <br>
+            <p class="text_instructions p_text">Player 2</p>
+            <ul class="text_instructions">
+                <li>left arrow = left  /  right arrow = right</li>
+                <li>down arrow = shoot</li>
+            </ul>
+        <a id="start" class="css-button">
+            <i class="fa fa-gear" aria-hidden="true"></i
+          ></span>
+          <span class="css-button-text">Start</span>
+        </a>
+    </div>
+    <div id="restartsection">
+        <a id="restart" class="css-button">
+            <i class="fa fa-gear" aria-hidden="true"></i
+          ></span>
+          <span class="css-button-text">Restart</span>
+        </a>
+    </div>
     <br />
     <div id="main">
       <!-- <button style="background-color: red; height: 50vh;"></button> -->
     </div>
-    <a id="restart" class="css-button">
-        <i class="fa fa-gear" aria-hidden="true"></i
-      ></span>
-      <span class="css-button-text">Restart</span>
-    </a>
     <script src="Scripts/decomp.js"></script>
     <script src="Scripts/matter.js"></script>
-    <script src="Scripts/script.js"></script>
+    <script src="Scripts/start.js"></script>
   </body>
 </html>

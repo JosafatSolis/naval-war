@@ -62,8 +62,8 @@ let shoot_allowed_s2 = true;
 let s1_bullet_id = 0;
 let s2_bullet_id = 0;
 
-let s1_life = 10;
-let s2_life = 10;
+let s1_life = 1;
+let s2_life = 1;
 
 let flgGameOver = false;
 let winnerMsg;
@@ -162,11 +162,13 @@ World.add(engine.world, [
   ground
 ]);
 
-// Engine
+// Starts the Game
 
 Engine.run(engine);
-
 Render.run(render);
+startGame();
+
+// Functions
 
 function shoot(isS1) {
   if (isS1) {
@@ -239,14 +241,13 @@ function restartGame() {
   winnerMsg = undefined;
   _audio.currentTime = 0;
   flgGameOver = false;
+  restartsection.style.display = "none";
   _audio.play();
 }
 
-start = document.getElementById("start");
-start.onclick = startGame;
-
 restart = document.getElementById("restart");
 restart.onclick = restartGame;
+restartsection = document.getElementById("restartsection");
 
 function checkForLoose() {
   if (s1_life <= 0) winnerMsg = "Player 2 Win!!";
@@ -254,6 +255,7 @@ function checkForLoose() {
   if (winnerMsg != undefined) {
     flgGameOver = true;
     _audioGameOver.play();
+    restartsection.style.display = "flex";
   }
 }
 

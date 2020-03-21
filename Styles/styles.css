@@ -33,3 +33,25 @@
   padding: 7px 10px;
   float: left;
 }
+
+#start {
+    visibility: visible;
+}
+
+#instructions {
+    text-align: center;
+}
+
+#restartsection {
+    display: none;
+    justify-content: center;
+}
+
+.text_instructions {
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.p_text {
+    font-size: large;
+}
