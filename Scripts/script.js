@@ -62,8 +62,8 @@ let shoot_allowed_s2 = true;
 let s1_bullet_id = 0;
 let s2_bullet_id = 0;
 
-let s1_life = 1;
-let s2_life = 1;
+let s1_life = 10;
+let s2_life = 10;
 
 let flgGameOver = false;
 let winnerMsg;
@@ -468,23 +468,29 @@ Events.on(render, "afterRender", function(event) {
   let context = render.context;
   context.fillStyle = "red";
   context.fillText(`P1: ${s1_life}   vs   P2: ${s2_life}`, 780, 60);
-  //   for (let i = 0; i < base.bodies.length; i = i + 4) {
-  //     context.beginPath();
-  //     context.moveTo(base.bodies[i].position.x, base.bodies[i].position.y);
-  //     let p1_x_1 = base.bodies[i].position.x;
-  //     j = i + 4;
-  //     let p1_x_2 = base.bodies[j].position.x;
-  //     let p1_x = p1_x_1 + (p1_x_2 - p1_x_1) / 2;
-  //     context.bezierCurveTo(
-  //       p1_x,
-  //       base.bodies[i].y,
-  //       p1_x,
-  //       base.bodies[i+4].position.y,
-  //       base.bodies[i+4].position.x,
-  //       base.bodies[i+4].position.y
-  //     );
-  //     context.stroke();
-  //   }
+  
+  let pos = [];
+  for (let i = 0; i < base.bodies.length; i = i + 4) {
+  pos.push ({x: base.bodies[i].position.x, y: base.bodies[i].position.y});
+  }
+
+  for (let j = 0; j < pos.length - 4; j++) {
+    const elem = pos[j];
+      context.beginPath();
+      context.moveTo(elem.x, elem.y);
+      let p1_x_1 = elem.x;
+      let p1_x_2 = pos[j+4].x;
+      let p1_x = p1_x_1 + (p1_x_2 - p1_x_1) / 2;
+      context.bezierCurveTo(
+        p1_x,
+        elem.y,
+        p1_x,
+        pos[j+4].y,
+        pos[j+4].x,
+        pos[j+4].y
+      );
+      context.stroke();
+  }
 
   if (flgGameOver) {
     // Dibuja el GameOver

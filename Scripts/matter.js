@@ -3613,7 +3613,7 @@ var Common = _dereq_('../core/Common');
 
         // render
         var render = {
-            visible: true,
+            visible: false,
             lineWidth: 2,
             strokeStyle: '#ffffff',
             type: 'line',
